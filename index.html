@@ -76,7 +76,7 @@
 
         <!-- Salvar Alterações -->
         <button onclick="saveEdits()" class="px-4 py-2 rounded-lg bg-stone-900 text-white font-bold hover:bg-stone-800 transition flex items-center gap-1.5 shadow">
-          <i data-lucide="save" class="w-4 h-4 text-amber-400"></i> Salvar no Navegador
+          <i data-lucide="save" class="w-4 h-4 text-amber-400"></i> Salvar no Banco de Dados
         </button>
 
         <!-- Fechar Painel -->
@@ -127,7 +127,7 @@
   </nav>
 
   <!-- HERO SECTION EDITORIAL CLEAN -->
-  <section class="relative py-12 sm:py-20 bg-gradient-to-b from-stone-50 via-white to-white border-b border-stone-100">
+  <section id="hero" class="relative py-12 sm:py-20 bg-gradient-to-b from-stone-50 via-white to-white border-b border-stone-100">
     <div class="max-w-6xl mx-auto px-4 sm:px-6">
       <div class="max-w-3xl space-y-6">
         
@@ -563,7 +563,7 @@
   <!-- FIREBASE (SDK modular via CDN) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy }
+    import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, deleteDoc, doc, query, orderBy }
       from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -577,7 +577,7 @@
 
     const app = initializeApp(firebaseConfig);
     window.db = getFirestore(app); // Firestore disponível globalmente como window.db
-    window.fb = { db: window.db, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy };
+    window.fb = { db: window.db, collection, addDoc, getDocs, getDoc, setDoc, deleteDoc, doc, query, orderBy };
     window.dispatchEvent(new Event('firebase-ready'));
   </script>
 
@@ -588,11 +588,14 @@
     // WhatsApp: número único para todos os links (altere apenas aqui)
     const WHATSAPP_NUMBER = '5500000000000';
     const buildWhatsappUrl = (text) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
-    document.querySelectorAll('[data-wa]').forEach(a => {
-      a.href = buildWhatsappUrl(a.dataset.wa);
-      a.target = '_blank';
-      a.rel = 'noopener';
-    });
+    function applyWhatsappLinks() {
+      document.querySelectorAll('[data-wa]').forEach(a => {
+        a.href = buildWhatsappUrl(a.dataset.wa);
+        a.target = '_blank';
+        a.rel = 'noopener';
+      });
+    }
+    applyWhatsappLinks();
 
     let clickCount = 0;
     let isEditMode = false;
@@ -642,38 +645,24 @@
       }
     }
 
-    // Upload de Imagem do Evento
-    function uploadEventImage(e) {
+    // Upload de Imagem do Evento (comprimida para caber no documento do Firestore)
+    async function uploadEventImage(e) {
       const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          document.getElementById('eventImage').src = evt.target.result;
-        }
-        reader.readAsDataURL(file);
-      }
+      if (file) document.getElementById('eventImage').src = await compressImage(file, 1000, 0.75);
     }
 
-    // Upload de Logo Personalizada para TODAS as Logos do Site (Preenchimento Redondo Total)
-    function uploadLogoImage(e) {
+    // Aplica a logo personalizada em TODAS as logos do site
+    function applyLogo(src) {
+      document.querySelectorAll('.logo-img').forEach(img => {
+        img.src = src;
+        img.classList.remove('hidden');
+      });
+      document.querySelectorAll('.default-logo-svg').forEach(el => el.classList.add('hidden'));
+    }
+
+    async function uploadLogoImage(e) {
       const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          const logoImgs = document.querySelectorAll('.logo-img');
-          const defaultSvgs = document.querySelectorAll('.default-logo-svg');
-
-          logoImgs.forEach(img => {
-            img.src = evt.target.result;
-            img.classList.remove('hidden');
-          });
-
-          defaultSvgs.forEach(svg => {
-            svg.classList.add('hidden');
-          });
-        }
-        reader.readAsDataURL(file);
-      }
+      if (file) applyLogo(await compressImage(file, 300, 0.9, 'image/png'));
     }
 
     // Adicionar Linha de Culto
@@ -733,11 +722,75 @@
       if (card) card.remove();
     }
 
-    // Salvar edições no navegador
-    function saveEdits() {
-      const pageData = document.body.innerHTML;
-      localStorage.setItem('admav_master_backup', pageData);
-      alert('✅ Alterações salvas com sucesso no seu navegador!');
+    // ===== CONTEÚDO DO SITE (Firestore: site/conteudo) =====
+    const SITE_DOC = ['site', 'conteudo'];
+    const PERSIST_SELECTORS = ['#hero', '#proximo-evento', '#proximo-culto', '#kids', '#visitante', '#ofertas', '#localizacao', '#logoText', '#subLogoText'];
+    const ALLOWED_HANDLERS = /^(removeServiceRow\(this\)|removePixCard\(this\)|copyPix\(this\)|addServiceRow\(\)|addPixCard\(\)|sendVisitorToWhatsapp\(event\)|uploadEventImage\(event\))$/;
+
+    // Remove scripts e handlers não previstos antes de injetar HTML vindo do banco
+    function sanitizeHtml(html) {
+      const tpl = document.createElement('template');
+      tpl.innerHTML = html;
+      tpl.content.querySelectorAll('script, iframe, object, embed, link, meta, base, style').forEach(n => n.remove());
+      tpl.content.querySelectorAll('*').forEach(el => {
+        [...el.attributes].forEach(({ name, value }) => {
+          const badHandler = name.startsWith('on') && !ALLOWED_HANDLERS.test(value.trim());
+          const badUrl = /^(href|src|xlink:href|action|formaction)$/i.test(name) && /^\s*javascript:/i.test(value);
+          if (badHandler || badUrl) el.removeAttribute(name);
+        });
+      });
+      return tpl.innerHTML;
+    }
+
+    function snapshotSite() {
+      const regioes = {};
+      PERSIST_SELECTORS.forEach(sel => {
+        const clone = document.querySelector(sel).cloneNode(true);
+        clone.querySelectorAll('.edit-only').forEach(el => el.classList.add('hidden'));
+        clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+        clone.querySelectorAll('#eventImage').forEach(img => img.removeAttribute('src'));
+        regioes[sel] = clone.innerHTML;
+      });
+      const logo = document.querySelector('.logo-img');
+      return {
+        regioes,
+        imagemEvento: document.getElementById('eventImage').src,
+        logo: logo.classList.contains('hidden') ? '' : logo.src,
+        eventoVisivel: isEventVisible,
+        atualizadoEm: Date.now()
+      };
+    }
+
+    async function saveEdits() {
+      if (!window.fb) return alert('Banco de dados ainda não carregou. Tente novamente em instantes.');
+      const data = snapshotSite();
+      if (JSON.stringify(data).length > 950000) return alert('O conteúdo ultrapassa o limite de 1 MB. Use imagens menores.');
+      try {
+        const { db, doc, setDoc } = window.fb;
+        await setDoc(doc(db, ...SITE_DOC), data);
+        alert('Alterações salvas no banco de dados.');
+      } catch (err) {
+        console.error(err);
+        alert('Não foi possível salvar. Verifique as regras do Firestore e a conexão.');
+      }
+    }
+
+    async function loadSiteContent() {
+      const { db, doc, getDoc } = window.fb;
+      const snap = await getDoc(doc(db, ...SITE_DOC));
+      if (!snap.exists()) return;
+      const d = snap.data();
+
+      Object.entries(d.regioes || {}).forEach(([sel, html]) => {
+        const el = PERSIST_SELECTORS.includes(sel) && document.querySelector(sel);
+        if (el) el.innerHTML = sanitizeHtml(html);
+      });
+      if (/^(https:|data:image\/)/.test(d.imagemEvento || '')) document.getElementById('eventImage').src = d.imagemEvento;
+      if (/^data:image\//.test(d.logo || '')) applyLogo(d.logo);
+      if (d.eventoVisivel === false && isEventVisible) toggleEventSection();
+
+      applyWhatsappLinks();
+      lucide.createIcons();
     }
 
     // Copiar chave PIX (card principal e secundários)
@@ -782,7 +835,7 @@
     }
 
     // Redimensiona e comprime a imagem (limite de 1 MB por documento do Firestore)
-    function compressImage(file, maxSize = 1280, quality = 0.8) {
+    function compressImage(file, maxSize = 1280, quality = 0.8, type = 'image/jpeg') {
       return new Promise((resolve, reject) => {
         const img = new Image();
         const url = URL.createObjectURL(file);
@@ -793,7 +846,7 @@
           canvas.height = Math.round(img.height * ratio);
           canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
           URL.revokeObjectURL(url);
-          resolve(canvas.toDataURL('image/jpeg', quality));
+          resolve(canvas.toDataURL(type, quality));
         };
         img.onerror = reject;
         img.src = url;
@@ -848,8 +901,12 @@
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
 
     renderGallery();
-    window.addEventListener('firebase-ready', () => loadGallery().catch(console.error));
-    if (window.fb) loadGallery().catch(console.error);
+    function initFirebaseData() {
+      loadSiteContent().catch(console.error);
+      loadGallery().catch(console.error);
+    }
+    window.addEventListener('firebase-ready', initFirebaseData);
+    if (window.fb) initFirebaseData();
 
     // Enviar formulário pro WhatsApp
     function sendVisitorToWhatsapp(e) {
