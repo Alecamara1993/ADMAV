@@ -2,7 +2,7 @@
 <html lang="pt-BR" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ADMAV - Igreja Assembleia de Deus Ministério Avançai</title>
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -38,8 +38,23 @@
       }
     }
   </script>
+  <style>
+    html { scroll-padding-top: 5rem; -webkit-tap-highlight-color: transparent; }
+    section[id] { scroll-margin-top: 5rem; }
+    h1, h2, h3, h4, p { overflow-wrap: break-word; }
+    @media (max-width: 639px) {
+      /* evita zoom automático do iOS ao focar campos */
+      input, select, textarea { font-size: 16px !important; }
+      /* botões de ação ocupam a largura toda no celular */
+      #hero .pt-2 > a,
+      #proximo-evento a[data-wa],
+      #localizacao a[target="_blank"] { display: flex; width: 100%; justify-content: center; }
+      #ofertas .pix-card { padding-left: 1.25rem; padding-right: 1.25rem; }
+      #localizacao .rounded-3xl { padding: 1.5rem; }
+    }
+  </style>
 </head>
-<body class="bg-admav-bgLight text-admav-text antialiased selection:bg-admav-chocoClaro selection:text-white pb-24">
+<body class="bg-admav-bgLight text-admav-text antialiased selection:bg-admav-chocoClaro selection:text-white pb-24 overflow-x-hidden">
 
   <!-- SPRITE SVG: ícones reutilizáveis (WhatsApp e logo padrão) -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -52,7 +67,7 @@
   </svg>
 
   <!-- PAINEL FIXO DE EDIÇÃO (SÓ APARECE APÓS 4 CLIQUES NA LOGO) -->
-  <div id="adminBar" class="hidden fixed bottom-0 inset-x-0 z-50 bg-amber-500 text-stone-900 px-4 py-3 shadow-2xl border-t-2 border-stone-900 font-sans text-xs font-bold">
+  <div id="adminBar" class="hidden fixed bottom-0 inset-x-0 z-50 max-h-[60vh] overflow-y-auto bg-amber-500 text-stone-900 px-4 py-3 shadow-2xl border-t-2 border-stone-900 font-sans text-xs font-bold">
     <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center gap-2">
         <span class="w-3 h-3 rounded-full bg-stone-900 animate-ping"></span>
@@ -89,7 +104,7 @@
 
   <!-- NAVBAR FIXA -->
   <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200/80 shadow-sm">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
       
       <!-- LOGO REDONDA (SÓ ATIVA O MODO DE EDIÇÃO COM 4 CLIQUES AQUI) -->
       <div id="logoTrigger" onclick="handleLogoClick()" class="flex items-center gap-3 cursor-pointer group select-none" title="Clique 4 vezes para abrir o modo de edição">
@@ -108,7 +123,7 @@
       </div>
 
       <!-- NAV LINKS DESKTOP -->
-      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600">
+      <div id="navLinks" class="hidden lg:flex items-center gap-4 xl:gap-6 text-[13px] xl:text-sm font-medium text-stone-600 whitespace-nowrap">
         <a href="#proximo-evento" id="navEventLink" class="hover:text-stone-900 transition">Próximo Evento</a>
         <a href="#proximo-culto" class="hover:text-stone-900 transition">Cultos</a>
         <a href="#kids" class="hover:text-stone-900 transition">ADMAV Kids</a>
@@ -118,12 +133,22 @@
         <a href="#localizacao" class="hover:text-stone-900 transition">Onde Estamos</a>
       </div>
 
-      <!-- BOTÃO CTA NAVBAR COM ÍCONE DO WHATSAPP -->
-      <a data-wa="Olá! Gostaria de mais informações." target="_blank" class="px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold transition flex items-center gap-2 shadow-sm">
-        <svg class="w-4 h-4 fill-current" aria-hidden="true"><use href="#icon-whatsapp"/></svg>
-        <span>Falar no WhatsApp</span>
-      </a>
+      <!-- CTA WHATSAPP + MENU MOBILE -->
+      <div class="flex items-center gap-2 shrink-0">
+        <a data-wa="Olá! Gostaria de mais informações." target="_blank" aria-label="Falar no WhatsApp" class="px-3 sm:px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold transition flex items-center gap-2 shadow-sm">
+          <svg class="w-4 h-4 fill-current" aria-hidden="true"><use href="#icon-whatsapp"/></svg>
+          <span class="hidden sm:inline lg:hidden xl:inline">Falar no WhatsApp</span>
+        </a>
+
+        <button id="menuBtn" type="button" onclick="toggleMobileMenu()" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileMenu" class="lg:hidden w-10 h-10 rounded-full border border-stone-200 text-stone-700 hover:bg-stone-100 flex items-center justify-center transition">
+          <span id="iconMenu"><i data-lucide="menu" class="w-5 h-5"></i></span>
+          <span id="iconClose" class="hidden"><i data-lucide="x" class="w-5 h-5"></i></span>
+        </button>
+      </div>
     </div>
+
+    <!-- PAINEL DO MENU MOBILE (montado via JS a partir dos links do menu desktop) -->
+    <div id="mobileMenu" class="hidden lg:hidden absolute inset-x-0 top-full bg-white border-b border-stone-200 shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto"></div>
   </nav>
 
   <!-- HERO SECTION EDITORIAL CLEAN -->
@@ -350,7 +375,7 @@
   </section>
 
   <!-- GALERIA DE FOTOS -->
-  <section id="galeria" class="py-16 max-w-6xl mx-auto px-4 sm:px-6 space-y-8">
+  <section id="galeria" class="py-12 sm:py-16 max-w-6xl mx-auto px-4 sm:px-6 space-y-8">
     <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
       <div class="space-y-2">
         <span class="text-xs font-bold uppercase tracking-widest text-emerald-700">Nossa Comunidade</span>
@@ -367,7 +392,7 @@
   </section>
 
   <!-- FORMULÁRIO DE VISITANTE / PEDIDO DE ORAÇÃO -->
-  <section id="visitante" class="bg-stone-50 py-16 border-y border-stone-200">
+  <section id="visitante" class="bg-stone-50 py-12 sm:py-16 border-y border-stone-200">
     <div class="max-w-3xl mx-auto px-4 sm:px-6 space-y-8">
       <div class="text-center space-y-2">
         <span class="text-xs font-bold uppercase tracking-widest text-emerald-700">Acolhimento & Oração</span>
@@ -405,7 +430,7 @@
   </section>
 
   <!-- DÍZIMOS, OFERTAS E CHAVES PIX ESPECIAIS (GRELHA LADO A LADO) -->
-  <section id="ofertas" class="bg-stone-900 text-white py-16">
+  <section id="ofertas" class="bg-stone-900 text-white py-12 sm:py-16">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
       
       <div class="text-center space-y-3 max-w-xl mx-auto">
@@ -494,7 +519,7 @@
   </section>
 
   <!-- LOCALIZAÇÃO & ENDEREÇO -->
-  <section id="localizacao" class="py-16 max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
+  <section id="localizacao" class="py-12 sm:py-16 max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
     <div class="text-center max-w-2xl mx-auto space-y-3">
       <span class="text-xs font-bold uppercase tracking-widest text-emerald-700">Venha nos visitar</span>
       <h2 class="font-serif text-3xl sm:text-4xl font-bold text-stone-900">Onde Estamos</h2>
@@ -529,7 +554,7 @@
   </div>
 
   <!-- BOTÃO FLUTUANTE DO WHATSAPP -->
-  <a data-wa="Olá! Gostaria de mais informações." target="_blank" class="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center shadow-2xl transition duration-300 hover:scale-110 group">
+  <a data-wa="Olá! Gostaria de mais informações." target="_blank" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center shadow-2xl transition duration-300 hover:scale-110 group">
     <svg class="w-7 h-7 fill-current" aria-hidden="true"><use href="#icon-whatsapp"/></svg>
     <span class="absolute right-16 bg-stone-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition duration-300 shadow-md">Fale Conosco no WhatsApp</span>
   </a>
@@ -586,7 +611,7 @@
     lucide.createIcons();
 
     // WhatsApp: número único para todos os links (altere apenas aqui)
-    const WHATSAPP_NUMBER = '5500000000000';
+    const WHATSAPP_NUMBER = '5521991980608';
     const buildWhatsappUrl = (text) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
     function applyWhatsappLinks() {
       document.querySelectorAll('[data-wa]').forEach(a => {
@@ -600,6 +625,30 @@
     let clickCount = 0;
     let isEditMode = false;
     let isEventVisible = true;
+
+    // Menu mobile: reaproveita os links do menu desktop (sem duplicar markup)
+    const menuBtn = document.getElementById('menuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+
+    function toggleMobileMenu(forceOpen) {
+      const open = typeof forceOpen === 'boolean' ? forceOpen : mobileMenu.classList.contains('hidden');
+      if (open) {
+        mobileMenu.replaceChildren(...[...document.querySelectorAll('#navLinks a:not(.hidden)')].map(link => {
+          const a = document.createElement('a');
+          a.href = link.getAttribute('href');
+          a.textContent = link.textContent.trim();
+          a.className = 'block px-6 py-3.5 text-sm font-medium text-stone-700 hover:bg-stone-50 border-b border-stone-100 last:border-b-0';
+          return a;
+        }));
+      }
+      mobileMenu.classList.toggle('hidden', !open);
+      menuBtn.setAttribute('aria-expanded', String(open));
+      document.getElementById('iconMenu').classList.toggle('hidden', open);
+      document.getElementById('iconClose').classList.toggle('hidden', !open);
+    }
+
+    mobileMenu.addEventListener('click', (e) => { if (e.target.closest('a')) toggleMobileMenu(false); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggleMobileMenu(false); });
 
     // Ativar modo de edição com EXATAMENTE 4 CLIQUES na logo
     function handleLogoClick() {
