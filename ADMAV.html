@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADMAV - Igreja Assembleia de Deus Ministério Avançai</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            admav: {
+              verde: '#008037',
+              verdeEscuro: '#044D29',
+              choco: '#8C5A43',
+              chocoClaro: '#D99B6A',
+              dourado: '#D9A036',
+              bgLight: '#FFFFFF',
+              bgSec: '#F8FAF8',
+              text: '#1C1917',
+              textMuted: '#57534E'
+            }
+          },
+          fontFamily: {
+            sans: ['"Inter"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'serif'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-admav-bgLight text-admav-text antialiased selection:bg-admav-chocoClaro selection:text-white pb-24">
+
+  <!-- PAINEL FIXO DE EDIÇÃO (SÓ APARECE APÓS 4 CLIQUES NA LOGO) -->
+  <div id="adminBar" class="hidden fixed bottom-0 inset-x-0 z-50 bg-amber-500 text-stone-900 px-4 py-3 shadow-2xl border-t-2 border-stone-900 font-sans text-xs font-bold">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-stone-900 animate-ping"></span>
+        <i data-lucide="edit-3" class="w-4 h-4"></i>
+        <span>MODO DE EDIÇÃO ATIVO: Clique sobre textos e imagens para alterar!</span>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Toggle Ocultar Evento Destaque -->
+        <button onclick="toggleEventSection()" class="px-3 py-2 rounded-lg bg-stone-900/10 hover:bg-stone-900/20 text-stone-900 font-bold transition flex items-center gap-1.5">
+          <i data-lucide="eye-off" class="w-4 h-4"></i>
+          <span id="toggleEventBtnText">Ocultar Destaque de Evento</span>
+        </button>
+
+        <!-- Trocar Logo por Upload -->
+        <label class="px-3 py-2 rounded-lg bg-stone-900/10 hover:bg-stone-900/20 text-stone-900 font-bold transition flex items-center gap-1.5 cursor-pointer">
+          <i data-lucide="upload" class="w-4 h-4"></i>
+          <span>Trocar Logo (Todas)</span>
+          <input type="file" accept="image/*" class="hidden" onchange="uploadLogoImage(event)">
+        </label>
+
+        <!-- Salvar Alterações -->
+        <button onclick="saveEdits()" class="px-4 py-2 rounded-lg bg-stone-900 text-white font-bold hover:bg-stone-800 transition flex items-center gap-1.5 shadow">
+          <i data-lucide="save" class="w-4 h-4 text-amber-400"></i> Salvar no Navegador
+        </button>
+
+        <!-- Fechar Painel -->
+        <button onclick="toggleEditMode()" class="px-3 py-2 rounded-lg bg-stone-800/20 hover:bg-stone-800/30 text-stone-900 font-bold transition">
+          Fechar Edição
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVBAR FIXA -->
+  <nav class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200/80 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+      
+      <!-- LOGO REDONDA (SÓ ATIVA O MODO DE EDIÇÃO COM 4 CLIQUES AQUI) -->
+      <div id="logoTrigger" onclick="handleLogoClick()" class="flex items-center gap-3 cursor-pointer group select-none" title="Clique 4 vezes para abrir o modo de edição">
+        <div class="w-12 h-12 rounded-full bg-emerald-900 p-0.5 flex items-center justify-center shadow-md group-hover:scale-105 transition relative overflow-hidden shrink-0 border-2 border-emerald-600">
+          <!-- Logo Padrão SVG / Foto Redonda Personalizada -->
+          <img class="logo-img hidden w-full h-full object-cover rounded-full" src="" alt="Logo ADMAV">
+          <div class="default-logo-svg flex items-center justify-center w-full h-full bg-emerald-900 rounded-full">
+            <svg class="w-8 h-8 text-emerald-500 fill-current" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+              <path d="M 50,20 C 80,10 130,15 160,35 C 185,50 190,85 170,110 C 150,135 125,185 95,190 C 70,195 55,160 45,130 C 35,100 20,80 25,55 C 30,35 35,25 50,20 Z" />
+            </svg>
+            <i data-lucide="footprints" class="w-4 h-4 text-white absolute"></i>
+          </div>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-bold text-lg tracking-tight text-stone-900 leading-none" id="logoText">ADMAV</span>
+          <span class="text-[10px] text-stone-500 uppercase tracking-widest font-semibold mt-0.5" id="subLogoText">Ministério Avançai</span>
+        </div>
+      </div>
+
+      <!-- NAV LINKS DESKTOP -->
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600">
+        <a href="#proximo-evento" id="navEventLink" class="hover:text-stone-900 transition">Próximo Evento</a>
+        <a href="#proximo-culto" class="hover:text-stone-900 transition">Cultos</a>
+        <a href="#kids" class="hover:text-stone-900 transition">ADMAV Kids</a>
+        <a href="#agenda" class="hover:text-stone-900 transition">Agenda</a>
+        <a href="#visitante" class="hover:text-stone-900 transition">Fazer Visita</a>
+        <a href="#ofertas" class="hover:text-stone-900 transition">Dízimos & PIX</a>
+        <a href="#localizacao" class="hover:text-stone-900 transition">Onde Estamos</a>
+      </div>
+
+      <!-- BOTÃO CTA NAVBAR COM ÍCONE DO WHATSAPP -->
+      <a href="https://wa.me/5500000000000?text=Olá!%20Gostaria%20de%20mais%20informações." target="_blank" class="px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold transition flex items-center gap-2 shadow-sm">
+        <i data-lucide="message-circle" class="w-4 h-4 text-white"></i>
+        <span>Falar no WhatsApp</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION EDITORIAL CLEAN -->
+  <section class="relative py-12 sm:py-20 bg-gradient-to-b from-stone-50 via-white to-white border-b border-stone-100">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+      <div class="max-w-3xl space-y-6">
+        
+        <!-- BADGE DE LOCALIZAÇÃO -->
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-stone-100 text-stone-700 text-xs font-semibold tracking-wide border border-stone-200">
+          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-700"></i>
+          <span id="heroBadge">Jardim Primavera · Duque de Caxias / RJ</span>
+        </div>
+
+        <h1 class="font-serif text-4xl sm:text-6xl text-stone-900 font-bold leading-tight tracking-tight" id="heroTitle">
+          Uma comunidade de fé, <span class="italic font-normal text-stone-600">comunhão</span> e missão.
+        </h1>
+
+        <p class="text-stone-600 text-lg sm:text-xl font-normal leading-relaxed max-w-2xl" id="heroSub">
+          Seja bem-vindo à Assembleia de Deus Ministério Avançai. Um lugar para você se conectar com Deus, fortalecer sua família e crescer na fé.
+        </p>
+
+        <!-- ESTATÍSTICAS / INDICADORES -->
+        <div class="pt-4 grid grid-cols-2 sm:grid-cols-3 gap-6 border-t border-stone-100 max-w-xl">
+          <div>
+            <span class="block text-2xl font-bold text-stone-900" id="stat1Val">2026</span>
+            <span class="text-xs text-stone-500 uppercase tracking-wider font-medium" id="stat1Lab">O Ano do Avanço</span>
+          </div>
+          <div>
+            <span class="block text-2xl font-bold text-stone-900" id="stat2Val">4 Cultos</span>
+            <span class="text-xs text-stone-500 uppercase tracking-wider font-medium" id="stat2Lab">Semanais</span>
+          </div>
+          <div class="col-span-2 sm:col-span-1">
+            <span class="block text-2xl font-bold text-stone-900" id="stat3Val">Pr. Samuel</span>
+            <span class="text-xs text-stone-500 uppercase tracking-wider font-medium" id="stat3Lab">Liderança Pastoral</span>
+          </div>
+        </div>
+
+        <!-- BOTÕES HERO -->
+        <div class="pt-2 flex flex-wrap gap-4">
+          <a href="#proximo-culto" class="px-6 py-3.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-medium text-sm transition flex items-center gap-2 shadow-md">
+            Visite-nos neste Domingo
+            <i data-lucide="arrow-right" class="w-4 h-4 text-emerald-400"></i>
+          </a>
+          <a href="https://wa.me/5500000000000?text=Olá!%20Gostaria%20de%20agendar%20uma%20visita." target="_blank" class="px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm transition flex items-center gap-2 shadow-md">
+            <i data-lucide="message-circle" class="w-4 h-4 text-white"></i>
+            Quero Fazer uma Visita
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CARD DE DESTAQUE: PRÓXIMO EVENTO / PROGRAMAÇÃO (PODE SER OCULTADO) -->
+  <section id="proximo-evento" class="max-w-6xl mx-auto px-4 sm:px-6 my-10 relative z-10 transition-all duration-300">
+    <div class="bg-stone-900 text-white rounded-3xl overflow-hidden shadow-2xl border border-stone-800 grid grid-cols-1 lg:grid-cols-12">
+      
+      <!-- LADO ESQUERDO: INFOS DO EVENTO -->
+      <div class="lg:col-span-7 p-6 sm:p-10 space-y-6 flex flex-col justify-between">
+        <div class="space-y-4">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-wider border border-amber-500/30" id="eventBadge">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            Destaque da Programação
+          </div>
+          
+          <h2 class="font-serif text-3xl sm:text-5xl font-bold text-white leading-tight" id="eventTitle">
+            Conferência de Mulheres 2026
+          </h2>
+          
+          <p class="text-stone-300 text-sm sm:text-base leading-relaxed" id="eventDesc">
+            Um tempo especial de renovo, louvor e ministração da Palavra de Deus para todas as mulheres. Venha e traga uma amiga!
+          </p>
+        </div>
+
+        <!-- DETALHES DE DATA E HORÁRIO -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-stone-800">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-stone-800 flex items-center justify-center text-amber-400 shrink-0">
+              <i data-lucide="calendar" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <span class="block text-[10px] uppercase text-stone-400 font-bold">Data</span>
+              <span class="text-sm font-bold text-white" id="eventDate">15 de Novembro de 2026</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-stone-800 flex items-center justify-center text-amber-400 shrink-0">
+              <i data-lucide="clock" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <span class="block text-[10px] uppercase text-stone-400 font-bold">Horário</span>
+              <span class="text-sm font-bold text-white" id="eventTime">Sábado a partir das 19h00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <a href="https://wa.me/5500000000000?text=Olá!%20Gostaria%20de%20me%20inscrever%20no%20próximo%20evento." target="_blank" class="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition shadow-lg">
+            <i data-lucide="message-circle" class="w-5 h-5"></i>
+            Garantir Vaga no WhatsApp
+          </a>
+        </div>
+      </div>
+
+      <!-- LADO DIREITO: IMAGEM DO ANÚNCIO (UPLOAD DIRETO DE ARQUIVO) -->
+      <div class="lg:col-span-5 relative bg-stone-800 min-h-[250px] lg:min-h-full group flex items-center justify-center overflow-hidden">
+        <img id="eventImage" src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80" alt="Capa do Evento" class="w-full h-full object-cover">
+        
+        <label class="edit-only hidden absolute inset-0 bg-stone-950/80 text-white font-bold text-xs uppercase tracking-wider flex flex-col items-center justify-center gap-2 transition cursor-pointer">
+          <i data-lucide="upload" class="w-8 h-8 text-amber-400"></i>
+          <span>Clique para trocar a foto do evento</span>
+          <input type="file" accept="image/*" class="hidden" onchange="uploadEventImage(event)">
+        </label>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- PROGRAMAÇÃO REGULAR DOS CULTOS SEMANAIS -->
+  <section id="proximo-culto" class="py-12 max-w-6xl mx-auto px-4 sm:px-6 space-y-8">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div class="space-y-2">
+        <span class="text-xs font-bold uppercase tracking-widest text-emerald-700">Reuniões Semanais</span>
+        <h2 class="font-serif text-3xl sm:text-4xl font-bold text-stone-900">Agenda de Cultos</h2>
+      </div>
+
+      <button onclick="addServiceRow()" class="edit-only hidden px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center gap-2 shadow">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i> Adicionar Novo Culto
+      </button>
+    </div>
+
+    <!-- TABELA EDITORIAL DE CULTOS -->
+    <div class="bg-white rounded-3xl border border-stone-200 divide-y divide-stone-100 overflow-hidden shadow-sm" id="servicesList">
+      
+      <!-- Linha 1: Domingo -->
+      <div class="p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-stone-50 transition service-item">
+        <div class="flex items-start sm:items-center gap-4">
+          <div class="w-24 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-amber-100 text-amber-900 text-center shrink-0">Domingo</div>
+          <div>
+            <h3 class="font-bold text-stone-900 text-lg">Culto da Família</h3>
+            <p class="text-stone-500 text-sm">Celebração principal, adoração e pregação da Palavra.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="flex items-center gap-1.5 text-stone-700 font-bold text-sm">
+            <i data-lucide="clock" class="w-4 h-4 text-emerald-600"></i> 18h00
+          </span>
+          <button onclick="removeServiceRow(this)" class="edit-only hidden p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+
+      <!-- Linha 2: Terça -->
+      <div class="p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-stone-50 transition service-item">
+        <div class="flex items-start sm:items-center gap-4">
+          <div class="w-24 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-stone-100 text-stone-800 text-center shrink-0">Terça</div>
+          <div>
+            <h3 class="font-bold text-stone-900 text-lg">Culto de Ensino e Doutrina</h3>
+            <p class="text-stone-500 text-sm">Aprofundamento bíblico e maturidade espiritual.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="flex items-center gap-1.5 text-stone-700 font-bold text-sm">
+            <i data-lucide="clock" class="w-4 h-4 text-emerald-600"></i> 19h30
+          </span>
+          <button onclick="removeServiceRow(this)" class="edit-only hidden p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+
+      <!-- Linha 3: Quinta -->
+      <div class="p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-stone-50 transition service-item">
+        <div class="flex items-start sm:items-center gap-4">
+          <div class="w-24 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-stone-100 text-stone-800 text-center shrink-0">Quinta</div>
+          <div>
+            <h3 class="font-bold text-stone-900 text-lg">Culto de Oração e Vitória</h3>
+            <p class="text-stone-500 text-sm">Momento de intercessão e busca pelo Espírito Santo.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="flex items-center gap-1.5 text-stone-700 font-bold text-sm">
+            <i data-lucide="clock" class="w-4 h-4 text-emerald-600"></i> 19h30
+          </span>
+          <button onclick="removeServiceRow(this)" class="edit-only hidden p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+
+      <!-- Linha 4: Sábado -->
+      <div class="p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-stone-50 transition service-item">
+        <div class="flex items-start sm:items-center gap-4">
+          <div class="w-24 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-900 text-center shrink-0">Sábado</div>
+          <div>
+            <h3 class="font-bold text-stone-900 text-lg">Culto de Jovens / Departamentos</h3>
+            <p class="text-stone-500 text-sm">Reuniões dinâmicas da juventude e ministérios específicos.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="flex items-center gap-1.5 text-stone-700 font-bold text-sm">
+            <i data-lucide="clock" class="w-4 h-4 text-emerald-600"></i> 19h30
+          </span>
+          <button onclick="removeServiceRow(this)" class="edit-only hidden p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- DESTAQUE ADMAV KIDS -->
+  <section id="kids" class="py-10 max-w-6xl mx-auto px-4 sm:px-6">
+    <div class="bg-amber-50 rounded-3xl p-8 sm:p-12 border border-amber-200/80 flex flex-col md:flex-row items-center justify-between gap-8">
+      <div class="space-y-4 max-w-xl text-center md:text-left">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-200/80 text-amber-900 text-xs font-bold uppercase tracking-wider">
+          <i data-lucide="smile" class="w-4 h-4"></i>
+          Ministério Infantil
+        </div>
+        <h2 class="font-serif text-3xl sm:text-4xl font-bold text-stone-900" id="kidsTitle">ADMAV Kids: Espaço seguro para seus filhos</h2>
+        <p class="text-stone-700 text-sm sm:text-base leading-relaxed" id="kidsDesc">
+          Traga toda a sua família! Durante nossos cultos de domingo, oferecemos uma sala totalmente preparada, com monitores dedicados, momentos de louvor e ensino bíblico para as crianças.
+        </p>
+      </div>
+      <div class="w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-amber-200/60 border-4 border-amber-300 flex items-center justify-center text-amber-800 shadow-inner shrink-0">
+        <i data-lucide="baby" class="w-16 h-16"></i>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORMULÁRIO DE VISITANTE / PEDIDO DE ORAÇÃO -->
+  <section id="visitante" class="bg-stone-50 py-16 border-y border-stone-200">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 space-y-8">
+      <div class="text-center space-y-2">
+        <span class="text-xs font-bold uppercase tracking-widest text-emerald-700">Acolhimento & Oração</span>
+        <h2 class="font-serif text-3xl sm:text-4xl font-bold text-stone-900">Planeje sua visita ou peça oração</h2>
+        <p class="text-stone-600 text-sm sm:text-base">
+          Preencha abaixo para avisar nossa equipe sobre sua visita ou enviar seu pedido de oração.
+        </p>
+      </div>
+
+      <form onsubmit="sendVisitorToWhatsapp(event)" class="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-sm space-y-4">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Seu Nome Completo</label>
+          <input type="text" id="visitorName" required placeholder="Digite seu nome..." class="w-full px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 text-sm focus:outline-none focus:border-stone-900">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Qual o motivo do contato?</label>
+          <select id="visitorType" class="w-full px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 text-sm focus:outline-none focus:border-stone-900">
+            <option value="Quero visitar a igreja no próximo culto">Quero fazer uma visita no próximo culto</option>
+            <option value="Gostaria de deixar um pedido de oração">Gostaria de deixar um pedido de oração</option>
+            <option value="Gostaria de falar com o Pastor Samuel">Gostaria de um contato com a liderança</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1">Mensagem ou Pedido de Oração (Opcional)</label>
+          <textarea id="visitorMessage" rows="3" placeholder="Escreva aqui se houver algum detalhe especial..." class="w-full px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 text-sm focus:outline-none focus:border-stone-900"></textarea>
+        </div>
+
+        <button type="submit" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition flex items-center justify-center gap-2 shadow-md">
+          <i data-lucide="message-circle" class="w-4 h-4"></i> Enviar Mensagem via WhatsApp
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- DÍZIMOS, OFERTAS E CHAVES PIX ESPECIAIS (GRELHA LADO A LADO) -->
+  <section id="ofertas" class="bg-stone-900 text-white py-16">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
+      
+      <div class="text-center space-y-3 max-w-xl mx-auto">
+        <div class="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto">
+          <i data-lucide="qr-code" class="w-7 h-7"></i>
+        </div>
+        <h2 class="font-serif text-3xl sm:text-4xl font-bold">Dízimos e Contribuições</h2>
+        <p class="text-stone-300 text-sm sm:text-base">
+          Sua generosidade abençoa a obra de Deus e expande o Reino.
+        </p>
+      </div>
+
+      <!-- BOTÃO PARA ADICIONAR NOVO PIX (SÓ APARECE NO MODO DE EDIÇÃO) -->
+      <div class="text-center edit-only hidden">
+        <button onclick="addPixCard()" class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold inline-flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i> Adicionar Nova Chave Pix
+        </button>
+      </div>
+
+      <!-- GRELHA DE PIX (DESTAQUE PARA DÍZIMOS E PIX ADICIONAIS LADO A LADO) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="pixContainer">
+        
+        <!-- CARD PRINCIPAL: DÍZIMOS E OFERTAS DA IGREJA -->
+        <div class="md:col-span-2 lg:col-span-3 p-8 rounded-3xl bg-stone-800 border-2 border-amber-500/50 space-y-4 shadow-xl text-center relative overflow-hidden">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-wider border border-amber-500/30">
+            <i data-lucide="star" class="w-3.5 h-3.5"></i> Chave Principal
+          </div>
+          <h3 class="text-2xl font-bold text-white">Dízimos e Ofertas Geral (ADMAV)</h3>
+          <p class="text-stone-300 text-sm max-w-md mx-auto">Chave oficial para manter a casa do Senhor e abençoar os cultos.</p>
+
+          <div class="max-w-md mx-auto p-3.5 rounded-xl bg-stone-950 font-mono text-emerald-400 text-base sm:text-lg break-all border border-stone-700" id="mainPixKey">
+            pix@admavancai.com.br
+          </div>
+
+          <button onclick="copySpecificPix('mainPixKey', this)" class="px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition inline-flex items-center gap-2 shadow-md">
+            <i data-lucide="copy" class="w-4 h-4"></i>
+            <span>Copiar Chave PIX</span>
+          </button>
+        </div>
+
+        <!-- CARD SECUNDÁRIO 1: MISSÕES -->
+        <div class="p-6 rounded-2xl bg-stone-800/80 border border-stone-700 space-y-3 text-center pix-card relative">
+          <button onclick="removePixCard(this)" class="edit-only hidden absolute top-3 right-3 text-red-400 hover:text-red-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          <span class="text-xs font-bold uppercase tracking-widest text-amber-400 block">Fundo de Missões</span>
+          <h4 class="font-bold text-white text-lg">Evangelismo & Obra Missionária</h4>
+          <div class="p-3 rounded-xl bg-stone-950 font-mono text-emerald-400 text-xs sm:text-sm break-all border border-stone-800 pix-val">
+            missoes@admavancai.com.br
+          </div>
+          <button onclick="copySpecificPixByElement(this)" class="w-full py-2.5 rounded-xl bg-stone-700 hover:bg-stone-600 text-white text-xs font-semibold transition flex items-center justify-center gap-2">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Copiar PIX Missões</span>
+          </button>
+        </div>
+
+        <!-- CARD SECUNDÁRIO 2: DEPARTAMENTO INFANTIL -->
+        <div class="p-6 rounded-2xl bg-stone-800/80 border border-stone-700 space-y-3 text-center pix-card relative">
+          <button onclick="removePixCard(this)" class="edit-only hidden absolute top-3 right-3 text-red-400 hover:text-red-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          <span class="text-xs font-bold uppercase tracking-widest text-amber-400 block">ADMAV Kids</span>
+          <h4 class="font-bold text-white text-lg">Departamento Infantil</h4>
+          <div class="p-3 rounded-xl bg-stone-950 font-mono text-emerald-400 text-xs sm:text-sm break-all border border-stone-800 pix-val">
+            kids@admavancai.com.br
+          </div>
+          <button onclick="copySpecificPixByElement(this)" class="w-full py-2.5 rounded-xl bg-stone-700 hover:bg-stone-600 text-white text-xs font-semibold transition flex items-center justify-center gap-2">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Copiar PIX Kids</span>
+          </button>
+        </div>
+
+        <!-- CARD SECUNDÁRIO 3: CONSTRUÇÃO & OBRAS -->
+        <div class="p-6 rounded-2xl bg-stone-800/80 border border-stone-700 space-y-3 text-center pix-card relative">
+          <button onclick="removePixCard(this)" class="edit-only hidden absolute top-3 right-3 text-red-400 hover:text-red-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          <span class="text-xs font-bold uppercase tracking-widest text-amber-400 block">Reforma & Obras</span>
+          <h4 class="font-bold text-white text-lg">Construção do Templo</h4>
+          <div class="p-3 rounded-xl bg-stone-950 font-mono text-emerald-400 text-xs sm:text-sm break-all border border-stone-800 pix-val">
+            obras@admavancai.com.br
+          </div>
+          <button onclick="copySpecificPixByElement(this)" class="w-full py-2.5 rounded-xl bg-stone-700 hover:bg-stone-600 text-white text-xs font-semibold transition flex items-center justify-center gap-2">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Copiar PIX Obras</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- LOCALIZAÇÃO & ENDEREÇO -->
+  <section id="localizacao" class="py-16 max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
+    <div class="text-center max-w-2xl mx-auto space-y-3">
+      <span class="text-xs font-bold uppercase tracking-widest text-emerald-700">Venha nos visitar</span>
+      <h2 class="font-serif text-3xl sm:text-4xl font-bold text-stone-900">Onde Estamos</h2>
+      <p class="text-stone-600 text-sm sm:text-base">
+        Estamos localizados no bairro Jardim Primavera em Duque de Caxias / RJ.
+      </p>
+    </div>
+
+    <div class="bg-stone-50 rounded-3xl p-8 sm:p-12 border border-stone-200 flex flex-col md:flex-row items-center justify-between gap-8">
+      <div class="space-y-4 text-center md:text-left">
+        <div class="inline-flex items-center gap-2 text-emerald-800 font-bold text-sm">
+          <i data-lucide="map-pin" class="w-5 h-5"></i>
+          Endereço da Igreja
+        </div>
+        <h3 class="text-2xl font-bold text-stone-900" id="churchAddress">Alameda Artur Azevedo, 257</h3>
+        <p class="text-stone-600 text-sm" id="churchCity">Jardim Primavera — Duque de Caxias / RJ</p>
+        <p class="text-xs text-stone-500">Pastor Presidente: <span class="font-semibold text-stone-800" id="pastorName">Samuel de Paula</span></p>
+      </div>
+
+      <a href="https://www.google.com/maps/search/?api=1&query=Alameda+Artur+Azevedo+257+Jardim+Primavera" target="_blank" class="px-8 py-4 rounded-2xl bg-stone-900 hover:bg-stone-800 text-white font-semibold transition flex items-center gap-3 shadow-lg whitespace-nowrap">
+        <i data-lucide="navigation" class="w-5 h-5 text-emerald-400"></i> Abrir no Google Maps
+      </a>
+    </div>
+  </section>
+
+  <!-- BOTÃO FLUTUANTE DO WHATSAPP -->
+  <a href="https://wa.me/5500000000000?text=Olá!%20Gostaria%20de%20mais%20informações." target="_blank" class="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center shadow-2xl transition duration-300 hover:scale-110 group">
+    <i data-lucide="message-circle" class="w-7 h-7"></i>
+    <span class="absolute right-16 bg-stone-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition duration-300 shadow-md">Fale Conosco no WhatsApp</span>
+  </a>
+
+  <!-- RODAPÉ EDITORIAL COM LOGO REDONDA E ASSINATURA -->
+  <footer class="bg-white border-t border-stone-200 py-12 px-4 text-stone-500 text-sm">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+      
+      <!-- LOGO FOOTER REDONDA -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-emerald-900 p-0.5 flex items-center justify-center overflow-hidden border border-emerald-600 shrink-0">
+          <img class="logo-img hidden w-full h-full object-cover rounded-full" src="" alt="Logo ADMAV">
+          <div class="default-logo-svg flex items-center justify-center w-full h-full bg-emerald-900 rounded-full">
+            <svg class="w-6 h-6 text-emerald-500 fill-current" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+              <path d="M 50,20 C 80,10 130,15 160,35 C 185,50 190,85 170,110 C 150,135 125,185 95,190 C 70,195 55,160 45,130 C 35,100 20,80 25,55 C 30,35 35,25 50,20 Z" />
+            </svg>
+          </div>
+        </div>
+        <span class="font-bold text-stone-900">ADMAV</span>
+      </div>
+
+      <p class="text-xs text-stone-500 text-center sm:text-left">
+        © 2026 Assembleia de Deus Ministério Avançai. Todos os direitos reservados.
+      </p>
+
+      <!-- ASSINATURA CLICÁVEL DO DESENVOLVEDOR -->
+      <div class="text-xs text-stone-500">
+        Desenvolvido por <a href="https://www.instagram.com/alessandrocamaraa/" target="_blank" class="font-bold text-stone-900 hover:text-emerald-600 transition underline">Alessandro Câmara</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JAVASCRIPT: CONTROLE SECRETO COM 4 CLIQUES, PIX MÚLTIPLOS E UPLOAD DE LOGO -->
+  <script>
+    lucide.createIcons();
+
+    let clickCount = 0;
+    let isEditMode = false;
+    let isEventVisible = true;
+
+    // Ativar modo de edição comEXATAMENTE 4 CLIQUES na logo
+    function handleLogoClick() {
+      clickCount++;
+      if (clickCount >= 4) {
+        toggleEditMode();
+        clickCount = 0;
+      }
+    }
+
+    // Ligar/Desligar modo de edição
+    function toggleEditMode() {
+      isEditMode = !isEditMode;
+      const adminBar = document.getElementById('adminBar');
+      const editButtons = document.querySelectorAll('.edit-only');
+
+      if (isEditMode) {
+        adminBar.classList.remove('hidden');
+        document.body.contentEditable = "true";
+        editButtons.forEach(btn => btn.classList.remove('hidden'));
+      } else {
+        adminBar.classList.add('hidden');
+        document.body.contentEditable = "false";
+        editButtons.forEach(btn => btn.classList.add('hidden'));
+      }
+    }
+
+    // Ocultar ou Exibir Seção de Evento Destaque
+    function toggleEventSection() {
+      isEventVisible = !isEventVisible;
+      const eventSec = document.getElementById('proximo-evento');
+      const navLink = document.getElementById('navEventLink');
+      const btnText = document.getElementById('toggleEventBtnText');
+
+      if (!isEventVisible) {
+        eventSec.classList.add('hidden');
+        if (navLink) navLink.classList.add('hidden');
+        btnText.innerText = "Exibir Destaque de Evento";
+      } else {
+        eventSec.classList.remove('hidden');
+        if (navLink) navLink.classList.remove('hidden');
+        btnText.innerText = "Ocultar Destaque de Evento";
+      }
+    }
+
+    // Upload de Imagem do Evento
+    function uploadEventImage(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          document.getElementById('eventImage').src = evt.target.result;
+        }
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // Upload de Logo Personalizada para TODAS as Logos do Site (Preenchimento Redondo Total)
+    function uploadLogoImage(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const logoImgs = document.querySelectorAll('.logo-img');
+          const defaultSvgs = document.querySelectorAll('.default-logo-svg');
+
+          logoImgs.forEach(img => {
+            img.src = evt.target.result;
+            img.classList.remove('hidden');
+          });
+
+          defaultSvgs.forEach(svg => {
+            svg.classList.add('hidden');
+          });
+        }
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // Adicionar Linha de Culto
+    function addServiceRow() {
+      const list = document.getElementById('servicesList');
+      const newRow = document.createElement('div');
+      newRow.className = "p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-stone-50 transition service-item";
+      newRow.innerHTML = `
+        <div class="flex items-start sm:items-center gap-4">
+          <div class="w-24 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg bg-stone-100 text-stone-800 text-center shrink-0">Novo Dia</div>
+          <div>
+            <h3 class="font-bold text-stone-900 text-lg">Novo Culto / Reunião</h3>
+            <p class="text-stone-500 text-sm">Descrição do momento de adoração e horário.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="flex items-center gap-1.5 text-stone-700 font-bold text-sm">
+            <i data-lucide="clock" class="w-4 h-4 text-emerald-600"></i> 19h30
+          </span>
+          <button onclick="removeServiceRow(this)" class="edit-only p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        </div>
+      `;
+      list.appendChild(newRow);
+      lucide.createIcons();
+    }
+
+    // Remover Linha de Culto
+    function removeServiceRow(btn) {
+      const row = btn.closest('.service-item');
+      if (row) row.remove();
+    }
+
+    // Adicionar Novo Card de PIX Secundário
+    function addPixCard() {
+      const container = document.getElementById('pixContainer');
+      const newCard = document.createElement('div');
+      newCard.className = "p-6 rounded-2xl bg-stone-800/80 border border-stone-700 space-y-3 text-center pix-card relative";
+      newCard.innerHTML = `
+        <button onclick="removePixCard(this)" class="edit-only absolute top-3 right-3 text-red-400 hover:text-red-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        <span class="text-xs font-bold uppercase tracking-widest text-amber-400 block">Novo Departamento</span>
+        <h4 class="font-bold text-white text-lg">Nome da Causa</h4>
+        <div class="p-3 rounded-xl bg-stone-950 font-mono text-emerald-400 text-xs sm:text-sm break-all border border-stone-800 pix-val">
+          chavepix@admavancai.com.br
+        </div>
+        <button onclick="copySpecificPixByElement(this)" class="w-full py-2.5 rounded-xl bg-stone-700 hover:bg-stone-600 text-white text-xs font-semibold transition flex items-center justify-center gap-2">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <span>Copiar Chave PIX</span>
+        </button>
+      `;
+      container.appendChild(newCard);
+      lucide.createIcons();
+    }
+
+    // Remover Card de PIX
+    function removePixCard(btn) {
+      const card = btn.closest('.pix-card');
+      if (card) card.remove();
+    }
+
+    // Salvar edições no navegador
+    function saveEdits() {
+      const pageData = document.body.innerHTML;
+      localStorage.setItem('admav_master_backup', pageData);
+      alert('✅ Alterações salvas com sucesso no seu navegador!');
+    }
+
+    // Copiar PIX Específico por ID
+    function copySpecificPix(elementId, btn) {
+      const pixKey = document.getElementById(elementId).innerText;
+      navigator.clipboard.writeText(pixKey).then(() => {
+        const span = btn.querySelector('span');
+        const originalText = span.innerText;
+        span.innerText = 'Copiado! ✨';
+        setTimeout(() => { span.innerText = originalText; }, 3000);
+      });
+    }
+
+    // Copiar PIX Específico por Card
+    function copySpecificPixByElement(btn) {
+      const card = btn.closest('.pix-card');
+      const pixVal = card.querySelector('.pix-val').innerText;
+      navigator.clipboard.writeText(pixVal).then(() => {
+        const span = btn.querySelector('span');
+        const originalText = span.innerText;
+        span.innerText = 'Copiado! ✨';
+        setTimeout(() => { span.innerText = originalText; }, 3000);
+      });
+    }
+
+    // Enviar formulário pro WhatsApp
+    function sendVisitorToWhatsapp(e) {
+      e.preventDefault();
+      const name = document.getElementById('visitorName').value;
+      const type = document.getElementById('visitorType').value;
+      const message = document.getElementById('visitorMessage').value;
+
+      let text = `Olá! Meu nome é *${name}*.\n*Assunto:* ${type}`;
+      if (message) text += `\n*Mensagem:* ${message}`;
+
+      window.open(`https://wa.me/5500000000000?text=${encodeURIComponent(text)}`, '_blank');
+    }
+  </script>
+</body>
+</html>
