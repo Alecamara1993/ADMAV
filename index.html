@@ -612,7 +612,7 @@
 
     // WhatsApp: número único para todos os links (altere apenas aqui)
     const WHATSAPP_NUMBER = '5521991980608';
-    const buildWhatsappUrl = (text) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+    const buildWhatsappUrl = (text) => `https://wa.me/${5521991980608}?text=${encodeURIComponent(text)}`;
     function applyWhatsappLinks() {
       document.querySelectorAll('[data-wa]').forEach(a => {
         a.href = buildWhatsappUrl(a.dataset.wa);
